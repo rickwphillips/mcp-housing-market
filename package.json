@@ -1,0 +1,47 @@
+{
+  "name": "@rickwphillips/mcp-housing-market",
+  "version": "1.0.0",
+  "description": "MCP server providing housing market data tools for Massachusetts counties",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-housing-market": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "housing",
+    "real-estate",
+    "massachusetts",
+    "redfin",
+    "fred"
+  ],
+  "author": "Rick Phillips <info@rickwphillips.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rickwphillips/mcp-housing-market.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
