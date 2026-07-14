@@ -78,6 +78,17 @@ export async function getMarketData(
   county: string,
   state: string
 ): Promise<MarketData> {
+  // The county lookup table is Massachusetts-only. `state` is otherwise used
+  // only to build the Redfin URL, so a non-MA state would silently pair an MA
+  // county's Redfin id/slug with the wrong state slug and return MA data (or a
+  // broken URL) mislabeled. Reject it explicitly instead.
+  if (state.toUpperCase() !== "MA") {
+    throw new Error(
+      `Only Massachusetts (MA) counties are supported; got state "${state}". ` +
+        `The county lookup table is MA-only.`
+    );
+  }
+
   const countyInfo: CountyInfo | undefined = lookupCounty(county);
 
   if (!countyInfo) {
@@ -105,10 +116,13 @@ export async function getMarketData(
 
   // Parse key metrics from the Redfin HTML.
   // Redfin pages embed market stats in various formats; we try multiple patterns.
+  // Only median-anchored patterns — a bare "$NNNNNN" fallback matched the first
+  // large dollar figure anywhere on the page (a featured listing or ad), which
+  // then fed affordability_check / compare_regions as if it were the county
+  // median. A null median (handled downstream) is safer than a wrong one.
   const medianPriceRaw = extractMetric(html, [
     /[Mm]edian\s+[Ss]ale\s+[Pp]rice[^$]*\$([\d,]+(?:\.\d+)?[KkMm]?)/,
     /data-rf-test-id="(?:abp-)?median[^"]*"[^>]*>.*?\$([\d,]+(?:\.\d+)?[KkMm]?)/s,
-    /\$([\d,]{6,})/,
   ]);
 
   const yoyRaw = extractMetric(html, [

@@ -11,6 +11,15 @@ const cache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 /**
+ * Redact secrets (e.g. api_key) from a URL before it appears in any error
+ * message. Error strings from these helpers propagate up to tool output, so an
+ * unredacted key would be leaked to the client on any non-200 response.
+ */
+function redactUrl(url: string): string {
+  return url.replace(/([?&](?:api_key|apikey|key|token)=)[^&]*/gi, "$1REDACTED");
+}
+
+/**
  * Fetch a URL with caching. Returns cached data if available and not expired.
  * Throws on network or HTTP errors with descriptive messages.
  */
@@ -29,7 +38,7 @@ export async function cachedFetch(url: string): Promise<string> {
 
   if (!response.ok) {
     throw new Error(
-      `HTTP ${response.status} fetching ${url}: ${response.statusText}`
+      `HTTP ${response.status} fetching ${redactUrl(url)}: ${response.statusText}`
     );
   }
 
@@ -56,7 +65,7 @@ export async function cachedFetchJson<T = unknown>(url: string): Promise<T> {
 
   if (!response.ok) {
     throw new Error(
-      `HTTP ${response.status} fetching ${url}: ${response.statusText}`
+      `HTTP ${response.status} fetching ${redactUrl(url)}: ${response.statusText}`
     );
   }
 
