@@ -30,6 +30,9 @@ interface RegionSummary {
   avg_days_on_market: number | null;
   total_active_listings: number | null;
   individual_data: MarketData[];
+  // Counties that failed to fetch. Present so a partial region average isn't
+  // silently reported as if every county succeeded.
+  partial_failures?: string[];
 }
 
 export interface CompareResult {
@@ -46,11 +49,17 @@ function parseCountyList(input: string): string[] {
     .filter((s) => s.length > 0);
 }
 
-function avg(values: (number | null)[]): number | null {
+function mean(values: (number | null)[]): number | null {
   const valid = values.filter((v): v is number => v !== null);
   if (valid.length === 0) return null;
-  return Math.round(valid.reduce((a, b) => a + b, 0) / valid.length);
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
 }
+
+const round0 = (v: number | null): number | null => (v === null ? null : Math.round(v));
+// Keep one decimal for percentages: rounding YoY to a whole number turned +0.4%
+// into 0 (reads as flat) and +2.9% into 3.
+const round1 = (v: number | null): number | null =>
+  v === null ? null : Math.round(v * 10) / 10;
 
 function sum(values: (number | null)[]): number | null {
   const valid = values.filter((v): v is number => v !== null);
@@ -84,11 +93,12 @@ async function summarizeRegion(
 
   return {
     counties: results.map((r) => r.county),
-    avg_median_price: avg(results.map((r) => r.median_home_price)),
-    avg_yoy_change_pct: avg(results.map((r) => r.yoy_change_pct)),
-    avg_days_on_market: avg(results.map((r) => r.median_days_on_market)),
+    avg_median_price: round0(mean(results.map((r) => r.median_home_price))),
+    avg_yoy_change_pct: round1(mean(results.map((r) => r.yoy_change_pct))),
+    avg_days_on_market: round0(mean(results.map((r) => r.median_days_on_market))),
     total_active_listings: sum(results.map((r) => r.active_listings)),
     individual_data: results,
+    ...(errors.length > 0 ? { partial_failures: errors } : {}),
   };
 }
 
